@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# Author: MuyuCheney
-# Date: 2024-10-15
+# YouTube Agent Grader Utils Module
 
 from langchain.prompts import PromptTemplate
 from langchain_core.output_parsers import JsonOutputParser, StrOutputParser
@@ -23,9 +22,8 @@ class GraderUtils:
             A callable function that takes a document and a question as input and returns a JSON object with a binary score indicating whether the document is relevant to the question.
         """
 
-        # 使用的特殊标记是为了指定不同部分的开始和结束，以及明确不同类型的文本块。
-        # 这些标记可以帮助大模型更好地理解和区分输入数据的不同部分，从而更精确地执行特定的任务。
-        # 您是一名评分员，负责评估检索到的文档与用户问题的相关性。如果文档包含与用户问题相关的关键词，请将其评为相关。这不需要非常严格的测试。目标是过滤掉错误的检索结果。
+        # Special markers are used to specify the start and end of different parts, as well as to clarify different types of text blocks.
+        # These markers help the large model better understand and distinguish different parts of the input data, thereby executing specific tasks more precisely.
         grade_prompt = PromptTemplate(
             template="""
             <|begin_of_text|><|start_header_id|>system<|end_header_id|>
@@ -43,12 +41,11 @@ class GraderUtils:
             input_variables=["document", "input"],
         )
 
-        # 创建一个 检索 的链
+        # Create a retrieval chain
         retriever_grader = grade_prompt | self.model | JsonOutputParser()
 
         return retriever_grader
 
-    # 您是一名评分员，负责评估答案是否基于/得到一组事实的支持。请给出“是”或“否”的二元评分，以表明答案是否基于/得到事实的支持。提供一个只有一个键“score”的JSON，不需要前言或解释。
     def create_hallucination_grader(self):
         """
         Creates a hallucination grader that assesses whether an answer is grounded in/supported by a set of facts.
@@ -105,7 +102,6 @@ class GraderUtils:
 
         return code_evaluator
 
-    # 您是一个问题重写器，将输入的问题转换成更好的版本，优化以适应向量存储检索。请查看输入并尝试理解其潜在的语义意图/含义。
     def create_question_rewriter(self):
         """
         Creates a question rewriter chain that rewrites a given question to improve its clarity and relevance.
@@ -137,39 +133,39 @@ if __name__ == '__main__':
         model=os.getenv("model"),
     )
 
-    # 创建一个评分器类的实例
+    # Create an instance of the grader class
     grader = GraderUtils(llm)
 
-    # # 创建一个检索的评估器
+    # # Create a retrieval evaluator
     # retrieval_grader = grader.create_retrieval_grader()
     #
-    # # 这是不相关的
+    # # This is irrelevant
     # retrieval_grader_results = retrieval_grader.invoke({
-    #     "document": "哈哈哈",
-    #     "input": "请问关于ChatGLM3-6B热门视频的描述有哪些？"
+    #     "document": "Hahaha",
+    #     "input": "What are the descriptions of popular videos about Python tutorials?"
     # })
     #
-    # # 这是相关的
+    # # This is relevant
     # # retrieval_grader_results = retrieval_grader.invoke({
-    # #     "document": "这是我查询到的热门视频的描述：ChatGLM3-6B的安装部署、微调、训练智能客服。文档、数据集、微调脚本获取方式：麻烦一键三连，评论后，我会找到评论私发源码，谢谢大家。",
-    # #     "input": "请问关于ChatGLM3-6B热门视频的描述有哪些？"
+    # #     "document": "This is the description of popular videos I queried: Python tutorial installation, deployment, fine-tuning, and training customer service agents.",
+    # #     "input": "What are the descriptions of popular videos about Python tutorials?"
     # # })
     #
     # print(f"retrieval_grader_results: {retrieval_grader_results}")
 
-    # # 创建一个检测大模型幻觉的生成器
+    # # Create a hallucination detector for the model
     # hallucination_grader = grader.create_hallucination_grader()
     #
-    # # 这是出现幻觉的回答
+    # # This is a hallucinated answer
     # # hallucination_grader_results = hallucination_grader.invoke({
-    # #     "documents": "这是我查询到的热门视频的描述：ChatGLM3-6B的安装部署、微调、训练智能客服。文档、数据集、微调脚本获取方式：麻烦一键三连，评论后，我会找到评论私发源码，谢谢大家。",
-    # #     "generation": "你好"
+    # #     "documents": "This is the description of popular videos I queried: Python tutorial installation, deployment, fine-tuning, and training customer service agents.",
+    # #     "generation": "Hello"
     # # })
     #
-    # # 这是基于检索内容生成的回答
+    # # This is an answer based on retrieved content
     # hallucination_grader_results = hallucination_grader.invoke({
-    #     "documents": "这是我查询到的热门视频的描述：ChatGLM3-6B的安装部署、微调、训练智能客服。文档、数据集、微调脚本获取方式：麻烦一键三连，评论后，我会找到评论私发源码，谢谢大家。",
-    #     "generation": "一般对于ChatGLM3-6B模型的热门视频，可以从安装部署、微调、训练等方向来思考"
+    #     "documents": "This is the description of popular videos I queried: Python tutorial installation, deployment, fine-tuning, and training customer service agents.",
+    #     "generation": "Generally, for popular Python tutorial videos, you can think about installation, deployment, fine-tuning, and training"
     # })
     #
     # print(f"hallucination_grader_results:{hallucination_grader_results}")
@@ -177,9 +173,9 @@ if __name__ == '__main__':
     # # Get the code evaluator
     # code_evaluator = grader.create_code_evaluator()
 
-    # 对输入的问题进行重写
+    # Rewrite the input question
     question_rewriter = grader.create_question_rewriter()
     question_rewriter_results = question_rewriter.invoke({
-        "input": "对于ChatGLM3-6B模型，应该如何写热门标题的描述,请你用中文回复"
+        "input": "How should I write descriptions for popular Python tutorial titles?"
     })
     print(f"question_rewriter_results: {question_rewriter_results}")

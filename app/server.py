@@ -1,9 +1,15 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# Author: MuyuCheney
-# Date: 2024-10-15
+# YouTube Agent Server Module
 
 import os
+import sys
+from pathlib import Path
+
+# Add project root directory to Python path
+project_root = Path(__file__).parent.parent
+sys.path.insert(0, str(project_root))
+
 from fastapi import FastAPI
 from fastapi.responses import RedirectResponse
 from langserve import add_routes
@@ -14,10 +20,12 @@ from dotenv import load_dotenv, find_dotenv
 
 load_dotenv(find_dotenv())
 
-# 初始化图节点的工作流
-chain = create_workflow(os.getenv('OPENAI_API_KEY'),
-                        os.getenv('model'),
-                        )
+# Initialize graph nodes workflow
+chain = create_workflow(
+    os.getenv('OPENAI_API_KEY'),
+    os.getenv('model'),
+    os.getenv('BASE_URL')
+)
 
 
 class Input(BaseModel):
@@ -29,9 +37,9 @@ class Output(BaseModel):
 
 
 app = FastAPI(
-    title="BiliAgent Server",
+    title="YouTubeAgent Server",
     version="1.0",
-    description="An API named bili_server designed specifically for real-time retrieval of live data from BiliBili."
+    description="An API designed specifically for real-time retrieval of live data from YouTube."
 )
 
 
@@ -40,11 +48,11 @@ async def redirect_root_to_docs():
     return RedirectResponse("/docs")
 
 
-# 添加路由
+# Add routes
 add_routes(
     app,
     chain.with_types(input_type=Input, output_type=Output),
-    path="/biliagent_chat",
+    path="/youtube_agent_chat",
 )
 
 if __name__ == "__main__":

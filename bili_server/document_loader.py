@@ -1,11 +1,9 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# Author: MuyuCheney
-# Date: 2024-10-15
-
+# YouTube Agent Document Loader Module
 
 from langchain_core.documents import Document
-from bilibili_tools import get_bilibi
+from youtube_tools import get_youtube
 from typing import List, Optional
 from langchain_openai import OpenAIEmbeddings
 from langchain_community.vectorstores import FAISS
@@ -19,18 +17,18 @@ class DocumentLoader:
 
     async def get_docs(self, keywords: List[str], page: int) -> List[Document]:
         """
-        Asynchronously retrieves documents based on specific keywords from the BiliBili API.
+        Asynchronously retrieves documents based on specific keywords from the YouTube API.
         This function utilizes a pipeline to fetch and format video data, returning it as Document objects.
 
         Args:
-        keywords (List[str]): A list of keywords used to query the BiliBili API.
+        keywords (List[str]): A list of keywords used to query the YouTube API.
         page (int): The page number in the API request, used for pagination.
 
         Returns:
             List[Document]: A list of Document objects containing the retrieved content.
         """
 
-        raw_docs = await get_bilibi.bilibili_detail_pipiline(keywords=keywords, page=page)
+        raw_docs = await get_youtube.youtube_detail_pipeline(keywords=keywords, page=page)
 
         docs = [Document(page_content=doc["real_data"]) for doc in raw_docs]
 
@@ -68,27 +66,27 @@ class DocumentLoader:
         Returns:
             Retriever instance or FAISS vector store.
         """
-        print(f"开始实时查询BiliBiliAPI获取数据")
+        print(f"Starting real-time query to YouTube API for data retrieval")
         docs = await self.get_docs(keywords, page)
-        print(f"接收到的BiliBili数据为：{docs}")
+        print(f"Received YouTube data: {docs}")
         print("-------------------------")
-        print(f"开始进行向量数据库存储")
+        print(f"Starting vector database storage")
         vector_store = await self.create_vector_store(docs)
-        print(f"成功完成向量数据库的存储")
+        print(f"Successfully completed vector database storage")
         print("-------------------------")
-        print(f"开始进行文本检索")
+        print(f"Starting text retrieval")
         retriever = vector_store.as_retriever(search_kwargs={"k": 10})
         retriever_result = retriever.invoke(str(keywords))
-        print(f"检索到的数据为：{retriever_result}")
+        print(f"Retrieved data: {retriever_result}")
         return retriever_result
 
 
 if __name__ == '__main__':
     import asyncio
 
-    # 创建 DocumentLoader 实例并调用 get_docs
+    # Create DocumentLoader instance and call get_docs
     async def main():
         loader = DocumentLoader()
-        await loader.get_retriever(keywords=["ChatGLM3-6b"], page=1)
+        await loader.get_retriever(keywords=["Python tutorial"], page=1)
 
     asyncio.run(main())

@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# Author: MuyuCheney
-# Date: 2024-10-15
+# YouTube Agent Graph Nodes Module
 
 from bili_server.generate_chain import create_generate_chain
 
@@ -18,8 +17,7 @@ class GraphNodes:
 
     async def retrieve(self, state):
         """
-        根据输入问题检索文档，并将它们添加到图状态中。
-        Retrieve documents
+        Retrieve documents based on the input question and add them to the graph state.
 
         Args:
             state (dict): The current graph state
@@ -27,18 +25,17 @@ class GraphNodes:
         Returns:
             state (dict): New key added to state, documents, that contains retrieved documents
         """
-        print("---节点：开始检索---")
+        print("---Node: Start Retrieval---")
         question = state["input"]
 
-        # 执行检索
+        # Execute retrieval
         documents = await self.retriever.get_retriever(keywords=[question], page=1)
-        print(f"这是检索到的Docs:{documents}")
+        print(f"Retrieved Docs: {documents}")
         return {"documents": documents, "input": question}
 
     def generate(self, state):
         """
-        使用输入问题和检索到的文档生成答案，并将生成添加到图形状态中。
-        Generate answer
+        Generate answer using the input question and retrieved documents, and add the generation to the graph state.
 
         Args:
             state (dict): The current graph state
@@ -46,19 +43,18 @@ class GraphNodes:
         Returns:
             state (dict): New key added to state, generation, that contains LLM generation
         """
-        print("---节点：生成响应---")
+        print("---Node: Generate Response---")
 
         question = state["input"]
         documents = state["documents"]
 
-        # 基于RAG生成
+        # Generate based on RAG
         generation = self.generate_chain.invoke({"context": documents, "input": question})
-        print(f"生成的响应为:{generation}")
+        print(f"Generated response: {generation}")
         return {"documents": documents, "input": question, "generation": generation}
 
     def grade_documents(self, state):
         """
-        重新表述输入问题以提高其清晰度和相关性，并使用转换后的问题更新图状态。
         Determines whether the retrieved documents are relevant to the question.
 
         Args:
@@ -67,7 +63,7 @@ class GraphNodes:
         Returns:
             state (dict): Updates documents key with only filtered relevant documents
         """
-        print("---节点：检查检索到的文档是否与问题相关---")
+        print("---Node: Check if retrieved documents are relevant to the question---")
         question = state["input"]
         documents = state["documents"]
 
@@ -78,10 +74,10 @@ class GraphNodes:
             score = self.retrieval_grader.invoke({"input": question, "document": d.page_content})
             grade = score["score"]
             if grade == "yes":
-                print("---评估结果: 检索文档与问题相关---")
+                print("---Evaluation result: Retrieved document is relevant to question---")
                 filtered_docs.append(d)
             else:
-                print("---评估结果: 检索文档与问题不相关---")
+                print("---Evaluation result: Retrieved document is not relevant to question---")
                 continue
 
         return {"documents": filtered_docs, "input": question}
@@ -96,12 +92,12 @@ class GraphNodes:
         Returns:
             state (dict): Updates question key with a re-phrased question
         """
-        print("---节点：重写用户输入的问题---")
+        print("---Node: Rewrite user input question---")
 
         question = state["input"]
         documents = state["documents"]
 
-        # 问题重写
+        # Question rewrite
         better_question = self.question_rewriter.invoke({"input": question})
-        print(f"这是重写的问题:{better_question}")
+        print(f"Rewritten question: {better_question}")
         return {"documents": documents, "input": better_question}

@@ -3,6 +3,13 @@
 # Author: MuyuCheney
 # Date: 2024-10-15
 
+import sys
+from pathlib import Path
+
+# 将项目根目录添加到 Python 路径中
+project_root = Path(__file__).parent.parent
+sys.path.insert(0, str(project_root))
+
 from langchain_openai import ChatOpenAI
 from bili_server.document_loader import DocumentLoader
 from bili_server.edges import EdgeGraph
@@ -14,12 +21,14 @@ from bili_server.nodes import GraphNodes
 from langgraph.graph import END, StateGraph
 
 
-def create_parser_components(api_key: str, model: str):
+def create_parser_components(api_key: str, model: str, base_url: str = None):
     """
     创建并初始化解析器组件和评分器实例。
 
     Args:
     api_key (str): 用于访问OpenAI服务的API密钥。
+    model (str): 使用的模型名称。
+    base_url (str): API 的基础 URL（可选）。
 
     Returns:
     dict: 包含所有创建的组件实例的字典。
@@ -28,12 +37,16 @@ def create_parser_components(api_key: str, model: str):
     # 创建 retriever 实例，用于文档检索
     retriever = DocumentLoader()
 
-    # 创建 LLM model 实例，配置为使用 GPT-4o 模型和指定的温度参数
-    llm = ChatOpenAI(
-        api_key=api_key,
-        model=model,
-        temperature=0
-    )
+    # 创建 LLM model 实例，配置为使用指定的模型和温度参数
+    llm_params = {
+        "api_key": api_key,
+        "model": model,
+        "temperature": 0
+    }
+    if base_url:
+        llm_params["base_url"] = base_url
+    
+    llm = ChatOpenAI(**llm_params)
 
     # 创建生成链，用于基于语言模型的生成任务
     generate_chain = create_generate_chain(llm)
@@ -65,7 +78,7 @@ def create_parser_components(api_key: str, model: str):
     }
 
 
-def create_workflow(api_key: str, model: str):
+def create_workflow(api_key: str, model: str, base_url: str = None):
     """
     创建并初始化工作流以及其组成的节点和边。
 
@@ -76,7 +89,7 @@ def create_workflow(api_key: str, model: str):
     # 调用函数并直接解构字典以获取所有实例
     (llm, retriever, generate_chain,
      retrieval_grader, hallucination_grader,
-     code_evaluator, question_rewriter) = create_parser_components(api_key, model).values()
+     code_evaluator, question_rewriter) = create_parser_components(api_key, model, base_url).values()
 
     # 初始化图结构
     workflow = StateGraph(GraphState)
